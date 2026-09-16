@@ -1,0 +1,6 @@
+{
+  "name": "LVO Chat",
+  "description": "Executive real-time messaging platform featuring live channels, direct messages, calendar, news broadcasts, and admin controls.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
