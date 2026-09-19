@@ -4,7 +4,7 @@ export interface CustomStatus {
   updatedAt?: string;
 }
 
-export type AppTheme = 'dark' | 'light';
+export type AppTheme = 'midnight' | 'slate' | 'emerald' | 'amber' | 'light' | 'dark';
 
 export interface User {
   id: string;

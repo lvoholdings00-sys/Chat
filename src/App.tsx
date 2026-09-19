@@ -15,8 +15,10 @@ import type {
   ChatTarget,
   Attachment,
   CustomStatus,
+  AppTheme,
 } from './types';
 import { playMessagePing, playSendSwoosh, getMuted, setMuted } from './lib/sound';
+import { WifiOff, CheckCircle2, RefreshCw } from 'lucide-react';
 import { LoginScreen } from './components/LoginScreen';
 import { NavigationRail } from './components/NavigationRail';
 import { ChatPane } from './components/ChatPane';
@@ -32,6 +34,8 @@ import { PasswordChangeModal } from './components/PasswordChangeModal';
 import { CommandPalette } from './components/CommandPalette';
 import { CustomStatusModal } from './components/CustomStatusModal';
 import { KeyboardShortcutsModal } from './components/KeyboardShortcutsModal';
+import { DocumentPreviewModal } from './components/DocumentPreviewModal';
+import { GlobalSearchModal } from './components/GlobalSearchModal';
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -58,12 +62,22 @@ export default function App() {
   const [isChannelModalOpen, setIsChannelModalOpen] = useState(false);
   const [isManageChannelOpen, setIsManageChannelOpen] = useState(false);
   const [lightboxAttachment, setLightboxAttachment] = useState<Attachment | null>(null);
+  const [docPreviewAttachment, setDocPreviewAttachment] = useState<Attachment | null>(null);
   const [isGifModalOpen, setIsGifModalOpen] = useState(false);
 
   // Power user features modals
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
   const [isShortcutsModalOpen, setIsShortcutsModalOpen] = useState(false);
+  const [isGlobalSearchOpen, setIsGlobalSearchOpen] = useState(false);
+  const [jumpHighlightMessageId, setJumpHighlightMessageId] = useState<string | null>(null);
+
+  // User Color Palette Theme State
+  const [currentTheme, setCurrentTheme] = useState<AppTheme>('midnight');
+
+  // Reconnection toast state
+  const [showReconnectedToast, setShowReconnectedToast] = useState(false);
+  const wasDisconnectedRef = useRef(false);
 
   const socketRef = useRef<Socket | null>(null);
 
@@ -333,9 +347,91 @@ export default function App() {
       }
     });
 
+    socket.on('user:presence_status_updated', (data: { userId: string; status: 'online' | 'idle' | 'offline'; lastSeen?: string }) => {
+      setUsers((prev) =>
+        prev.map((u) => (u.id === data.userId ? { ...u, status: data.status, lastSeen: data.lastSeen || u.lastSeen } : u))
+      );
+      if (currentUser.id === data.userId) {
+        setCurrentUser((prev) => (prev ? { ...prev, status: data.status, lastSeen: data.lastSeen || prev.lastSeen } : null));
+      }
+    });
+
     return () => {
       socket.disconnect();
       socketRef.current = null;
+    };
+  }, [currentUser?.id]);
+
+  // Reconnection tracking: show auto-dismissing confirmation when restored
+  useEffect(() => {
+    if (!currentUser) return;
+    if (!isRealtimeConnected) {
+      wasDisconnectedRef.current = true;
+    } else if (isRealtimeConnected && wasDisconnectedRef.current) {
+      wasDisconnectedRef.current = false;
+      setShowReconnectedToast(true);
+      const timer = window.setTimeout(() => setShowReconnectedToast(false), 2500);
+      return () => window.clearTimeout(timer);
+    }
+  }, [isRealtimeConnected, currentUser?.id]);
+
+  // Idle timer: updates user's status to 'Away' (idle) after 5 minutes of inactivity
+  useEffect(() => {
+    if (!currentUser) return;
+    const IDLE_TIMEOUT_MS = 5 * 60 * 1000;
+    let timerId: number;
+    let isAway = false;
+
+    const onUserActivity = () => {
+      window.clearTimeout(timerId);
+
+      // If user was away/idle, return to online
+      if (isAway) {
+        isAway = false;
+        socketRef.current?.emit('user:presence_status', {
+          userId: currentUser.id,
+          status: 'online',
+        });
+        setUsers((prev) =>
+          prev.map((u) => (u.id === currentUser.id ? { ...u, status: 'online' } : u))
+        );
+        setCurrentUser((prev) => (prev ? { ...prev, status: 'online' } : null));
+      }
+
+      timerId = window.setTimeout(() => {
+        isAway = true;
+        socketRef.current?.emit('user:presence_status', {
+          userId: currentUser.id,
+          status: 'idle',
+        });
+        setUsers((prev) =>
+          prev.map((u) => (u.id === currentUser.id ? { ...u, status: 'idle' } : u))
+        );
+        setCurrentUser((prev) => (prev ? { ...prev, status: 'idle' } : null));
+      }, IDLE_TIMEOUT_MS);
+    };
+
+    const activityEvents = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll', 'click'];
+    activityEvents.forEach((evt) =>
+      window.addEventListener(evt, onUserActivity, { passive: true })
+    );
+
+    // Initial arming of timer
+    timerId = window.setTimeout(() => {
+      isAway = true;
+      socketRef.current?.emit('user:presence_status', {
+        userId: currentUser.id,
+        status: 'idle',
+      });
+      setUsers((prev) =>
+        prev.map((u) => (u.id === currentUser.id ? { ...u, status: 'idle' } : u))
+      );
+      setCurrentUser((prev) => (prev ? { ...prev, status: 'idle' } : null));
+    }, IDLE_TIMEOUT_MS);
+
+    return () => {
+      window.clearTimeout(timerId);
+      activityEvents.forEach((evt) => window.removeEventListener(evt, onUserActivity));
     };
   }, [currentUser?.id]);
 
@@ -437,6 +533,13 @@ export default function App() {
         return;
       }
 
+      // Cmd+F or Cmd+Shift+F: Global Message History Search
+      if (cmdOrCtrl && (e.key.toLowerCase() === 'f' || (e.shiftKey && e.key.toLowerCase() === 'f'))) {
+        e.preventDefault();
+        setIsGlobalSearchOpen(true);
+        return;
+      }
+
       // '?' outside inputs: Show Shortcuts Modal
       if (!isInput && e.key === '?' && !cmdOrCtrl) {
         e.preventDefault();
@@ -451,11 +554,57 @@ export default function App() {
     isCommandPaletteOpen,
     isStatusModalOpen,
     isShortcutsModalOpen,
+    isGlobalSearchOpen,
     isAvatarModalOpen,
     isChannelModalOpen,
     isManageChannelOpen,
     isAdminOpen,
   ]);
+
+  // Synchronize theme with currentUser or localStorage
+  useEffect(() => {
+    if (currentUser?.theme) {
+      setCurrentTheme(currentUser.theme);
+      document.documentElement.setAttribute('data-theme', currentUser.theme);
+    } else {
+      const saved = localStorage.getItem('lvo_theme') as AppTheme | null;
+      if (saved) {
+        setCurrentTheme(saved);
+        document.documentElement.setAttribute('data-theme', saved);
+      } else {
+        document.documentElement.setAttribute('data-theme', 'midnight');
+      }
+    }
+  }, [currentUser?.theme]);
+
+  const handleSelectTheme = async (theme: AppTheme) => {
+    setCurrentTheme(theme);
+    document.documentElement.setAttribute('data-theme', theme);
+    try {
+      localStorage.setItem('lvo_theme', theme);
+    } catch {}
+
+    if (currentUser) {
+      try {
+        await fetch('/api/profile/theme', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: currentUser.id, theme }),
+        });
+        setCurrentUser((prev) => (prev ? { ...prev, theme } : null));
+      } catch (err) {
+        console.warn('Failed to persist theme:', err);
+      }
+    }
+  };
+
+  // Jump to message from Global Search or history
+  const handleJumpToMessage = (target: ChatTarget, messageId: string) => {
+    handleSelectTarget(target);
+    setActiveTab('chat');
+    setMobileShowChat(true);
+    setJumpHighlightMessageId(messageId);
+  };
 
   // Handle switching channels
   const handleSelectTarget = (target: ChatTarget) => {
@@ -813,7 +962,22 @@ export default function App() {
   const activeTypingUsers = activeTarget ? typingMap[activeTarget.id] || [] : [];
 
   return (
-    <div className="h-screen w-screen flex overflow-hidden bg-[#0d0e12] font-['Plus_Jakarta_Sans',sans-serif] text-neutral-100 antialiased">
+    <div className="h-screen w-screen flex overflow-hidden bg-[#0d0e12] font-['Plus_Jakarta_Sans',sans-serif] text-neutral-100 antialiased relative">
+      {/* Subtle WebSocket Reconnecting / Reconnected Toast */}
+      {currentUser && !isRealtimeConnected && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2.5 px-4 py-2 rounded-full bg-[#181a24]/90 border border-amber-500/40 text-amber-300 text-xs font-mono backdrop-blur-md shadow-2xl animate-in fade-in slide-in-from-top-3">
+          <RefreshCw className="w-3.5 h-3.5 animate-spin text-amber-400 shrink-0" />
+          <span>WebSocket disconnected — reconnecting to live comms...</span>
+        </div>
+      )}
+
+      {currentUser && showReconnectedToast && isRealtimeConnected && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-4 py-2 rounded-full bg-[#181a24]/90 border border-emerald-500/40 text-emerald-300 text-xs font-mono backdrop-blur-md shadow-2xl animate-in fade-in slide-in-from-top-3">
+          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+          <span>Live telemetry connection restored</span>
+        </div>
+      )}
+
       {/* Admin Panel Full View */}
       {isAdminOpen ? (
         <AdminPanel
@@ -847,6 +1011,10 @@ export default function App() {
               onOpenStatusModal={() => setIsStatusModalOpen(true)}
               onOpenShortcutsModal={() => setIsShortcutsModalOpen(true)}
               onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
+              onOpenGlobalSearch={() => setIsGlobalSearchOpen(true)}
+              onJumpToMessage={handleJumpToMessage}
+              currentTheme={currentTheme}
+              onSelectTheme={handleSelectTheme}
               onLogout={handleLogout}
               onSwitchUser={handleSwitchUser}
               onlineUserIds={onlineUserIds}
@@ -876,12 +1044,15 @@ export default function App() {
                 onOpenManageChannel={() => setIsManageChannelOpen(true)}
                 onOpenGifModal={() => setIsGifModalOpen(true)}
                 onPreviewAttachment={(att) => setLightboxAttachment(att)}
+                onPreviewDocument={(att) => setDocPreviewAttachment(att)}
                 onBackMobile={() => setMobileShowChat(false)}
                 typingUsers={activeTypingUsers}
                 onSendTyping={handleSendTyping}
                 onMarkAsRead={handleMarkAsRead}
                 isMuted={isMutedState}
                 onToggleMute={handleToggleMute}
+                highlightMessageId={jumpHighlightMessageId}
+                onClearHighlightMessageId={() => setJumpHighlightMessageId(null)}
               />
             )}
 
@@ -994,7 +1165,7 @@ export default function App() {
       <CustomStatusModal
         isOpen={isStatusModalOpen}
         onClose={() => setIsStatusModalOpen(false)}
-        currentStatus={currentUser.customStatus}
+        currentStatus={currentUser?.customStatus}
         onSaveStatus={handleSaveCustomStatus}
       />
 
@@ -1002,6 +1173,22 @@ export default function App() {
       <KeyboardShortcutsModal
         isOpen={isShortcutsModalOpen}
         onClose={() => setIsShortcutsModalOpen(false)}
+      />
+
+      {/* Global Message History Search Modal (⌘F) */}
+      <GlobalSearchModal
+        isOpen={isGlobalSearchOpen}
+        onClose={() => setIsGlobalSearchOpen(false)}
+        currentUser={currentUser}
+        channels={channels}
+        allUsers={users}
+        onJumpToMessage={handleJumpToMessage}
+      />
+
+      {/* Document & PDF In-App Direct Preview Modal */}
+      <DocumentPreviewModal
+        attachment={docPreviewAttachment}
+        onClose={() => setDocPreviewAttachment(null)}
       />
     </div>
   );

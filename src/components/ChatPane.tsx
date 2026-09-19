@@ -28,9 +28,15 @@ import {
   ExternalLink,
   Check,
   CheckCheck,
+  Video,
+  ChevronDown,
+  Eye,
 } from 'lucide-react';
 import type { User, Channel, Message, ChatTarget, Attachment } from '../types';
 import { VoiceMessagePlayer } from './VoiceMessagePlayer';
+import { MessageContentRenderer } from './CodeBlock';
+import { EmojiPopover } from './EmojiPopover';
+import { DocumentPreviewModal } from './DocumentPreviewModal';
 
 interface ChatPaneProps {
   currentUser: User;
@@ -45,12 +51,15 @@ interface ChatPaneProps {
   onOpenManageChannel: () => void;
   onOpenGifModal: () => void;
   onPreviewAttachment: (att: Attachment) => void;
+  onPreviewDocument?: (att: Attachment) => void;
   onBackMobile?: () => void;
   typingUsers: string[];
   onSendTyping: (isTyping: boolean) => void;
   isMuted: boolean;
   onToggleMute: () => void;
   onMarkAsRead?: (messageIds: string[]) => void;
+  highlightMessageId?: string | null;
+  onClearHighlightMessageId?: () => void;
 }
 
 const COMMON_REACTIONS = ['❤️', '👍', '🔥', '💎', '🫡', '⚡', '😂', '🎯'];
@@ -68,18 +77,30 @@ export const ChatPane: React.FC<ChatPaneProps> = ({
   onOpenManageChannel,
   onOpenGifModal,
   onPreviewAttachment,
+  onPreviewDocument,
   onBackMobile,
   typingUsers,
   onSendTyping,
   isMuted,
   onToggleMute,
   onMarkAsRead,
+  highlightMessageId,
+  onClearHighlightMessageId,
 }) => {
   const [inputText, setInputText] = useState('');
   const [stagedAttachments, setStagedAttachments] = useState<Attachment[]>([]);
   const [activeReactionPickerMsgId, setActiveReactionPickerMsgId] = useState<string | null>(null);
   const [translatingMsgIds, setTranslatingMsgIds] = useState<Set<string>>(new Set());
   const [translations, setTranslations] = useState<Record<string, string>>({});
+  const [docPreviewAttachment, setDocPreviewAttachment] = useState<Attachment | null>(null);
+
+  const handleOpenDocPreview = (att: Attachment) => {
+    if (onPreviewDocument) {
+      onPreviewDocument(att);
+    } else {
+      setDocPreviewAttachment(att);
+    }
+  };
 
   // Pinned & Thread Drawers
   const [showPinnedDrawer, setShowPinnedDrawer] = useState(false);
@@ -92,6 +113,15 @@ export const ChatPane: React.FC<ChatPaneProps> = ({
   const prevTargetRef = useRef<ChatTarget | null>(null);
   const inputTextRef = useRef<string>('');
   const [isDraftRestored, setIsDraftRestored] = useState(false);
+
+  // Unread messages tracking & 'New Messages' bar
+  const [firstUnreadMessageId, setFirstUnreadMessageId] = useState<string | null>(null);
+  const firstUnreadRef = useRef<HTMLDivElement | null>(null);
+
+  // @ Mention Popup State
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null);
+  const [selectedMentionIdx, setSelectedMentionIdx] = useState<number>(0);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   // Voice recording state & visualizer
   const [isRecording, setIsRecording] = useState(false);
@@ -150,6 +180,24 @@ export const ChatPane: React.FC<ChatPaneProps> = ({
     inputTextRef.current = inputText;
   }, [inputText]);
 
+  // Jump to & highlight specific message (e.g. from Global Search)
+  useEffect(() => {
+    if (highlightMessageId) {
+      setHighlightedMsgId(highlightMessageId);
+      setTimeout(() => {
+        const el = document.getElementById(`msg-${highlightMessageId}`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 150);
+      const timer = setTimeout(() => {
+        setHighlightedMsgId(null);
+        if (onClearHighlightMessageId) onClearHighlightMessageId();
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [highlightMessageId, onClearHighlightMessageId]);
+
   // Handle local storage draft preservation across channel/DM switches
   useEffect(() => {
     // 1. Save draft for previous target if user typed something
@@ -190,6 +238,67 @@ export const ChatPane: React.FC<ChatPaneProps> = ({
     prevTargetRef.current = activeTarget;
   }, [activeTarget?.id, activeTarget?.type, currentUser.id]);
 
+  // Calculate first unread message when returning to a channel
+  useEffect(() => {
+    if (!activeTarget) {
+      setFirstUnreadMessageId(null);
+      return;
+    }
+    const unreadMessages = targetMessages.filter(
+      (m) => m.senderId !== currentUser.id && (!m.readBy || !m.readBy[currentUser.id])
+    );
+    if (unreadMessages.length > 0) {
+      setFirstUnreadMessageId(unreadMessages[0].id);
+    } else {
+      setFirstUnreadMessageId(null);
+    }
+  }, [activeTarget?.id]);
+
+  // Matching users for @ mention autocomplete
+  const matchingMentionUsers = useMemo(() => {
+    if (mentionQuery === null) return [];
+    const q = mentionQuery.toLowerCase();
+    return allUsers
+      .filter(
+        (u) =>
+          u.username.toLowerCase().includes(q) ||
+          u.displayName.toLowerCase().includes(q)
+      )
+      .slice(0, 6);
+  }, [mentionQuery, allUsers]);
+
+  const handleSelectMention = (user: User) => {
+    if (!textareaRef.current) return;
+    const cursor = textareaRef.current.selectionStart || inputText.length;
+    const textBeforeCursor = inputText.slice(0, cursor);
+    const textAfterCursor = inputText.slice(cursor);
+
+    const lastAtIdx = textBeforeCursor.lastIndexOf('@');
+    if (lastAtIdx !== -1) {
+      const updated = textBeforeCursor.slice(0, lastAtIdx) + `@${user.username} ` + textAfterCursor;
+      setInputText(updated);
+      inputTextRef.current = updated;
+      setMentionQuery(null);
+
+      // Refocus textarea and position cursor after inserted mention
+      setTimeout(() => {
+        if (textareaRef.current) {
+          const newCursorPos = lastAtIdx + user.username.length + 2;
+          textareaRef.current.focus();
+          textareaRef.current.setSelectionRange(newCursorPos, newCursorPos);
+        }
+      }, 0);
+    }
+  };
+
+  const handleStartHuddle = async () => {
+    if (!activeTarget || activeTarget.type !== 'channel') return;
+    const huddleId = 'huddle-' + Math.random().toString(36).substring(2, 9);
+    const huddleUrl = `https://meet.lvo-cloud.cloud/${huddleId}`;
+    const huddleMessage = `🎙️ **Live Huddle Initiated** by ${currentUser.displayName}\nJoin the voice & video frequency here: ${huddleUrl}`;
+    await onSendMessage(huddleMessage);
+  };
+
   // Read receipts: Automatically mark unread messages as read when viewing target
   useEffect(() => {
     if (!activeTarget || !onMarkAsRead) return;
@@ -216,12 +325,24 @@ export const ChatPane: React.FC<ChatPaneProps> = ({
     }
   }, [threadReplies.length, activeThreadMessageId]);
 
-  // Handle typing debounce & draft saving
+  // Handle typing debounce, mention detection & draft saving
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const val = e.target.value;
     setInputText(val);
     inputTextRef.current = val;
     setIsDraftRestored(false);
+
+    // Check cursor position for '@' mention
+    const cursor = e.target.selectionStart;
+    const textBeforeCursor = val.slice(0, cursor);
+    const mentionMatch = textBeforeCursor.match(/(?:^|\s)@([a-zA-Z0-9_-]*)$/);
+
+    if (mentionMatch) {
+      setMentionQuery(mentionMatch[1]);
+      setSelectedMentionIdx(0);
+    } else {
+      setMentionQuery(null);
+    }
 
     if (activeTarget) {
       const key = `lvo_draft_${currentUser.id}_${activeTarget.type}_${activeTarget.id}`;
@@ -243,6 +364,33 @@ export const ChatPane: React.FC<ChatPaneProps> = ({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Keyboard navigation for mention popup
+    if (mentionQuery !== null && matchingMentionUsers.length > 0) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setSelectedMentionIdx((prev) => (prev + 1) % matchingMentionUsers.length);
+        return;
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setSelectedMentionIdx((prev) => (prev - 1 + matchingMentionUsers.length) % matchingMentionUsers.length);
+        return;
+      }
+      if (e.key === 'Enter' || e.key === 'Tab') {
+        e.preventDefault();
+        const selected = matchingMentionUsers[selectedMentionIdx];
+        if (selected) {
+          handleSelectMention(selected);
+        }
+        return;
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setMentionQuery(null);
+        return;
+      }
+    }
+
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
@@ -694,6 +842,19 @@ export const ChatPane: React.FC<ChatPaneProps> = ({
               {isMuted ? <BellOff className="w-4 h-4 text-neutral-500" /> : <Bell className="w-4 h-4 text-indigo-400" />}
             </button>
 
+            {/* Start Live Huddle Button */}
+            {activeTarget.type === 'channel' && !isAnnouncementChannel && (
+              <button
+                type="button"
+                onClick={handleStartHuddle}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/35 border border-indigo-500/30 hover:border-indigo-500/60 text-indigo-300 hover:text-white transition-all text-xs font-semibold cursor-pointer shadow-sm active:scale-95"
+                title="Broadcast a live video/audio huddle room to this channel"
+              >
+                <Video className="w-3.5 h-3.5 text-indigo-400" />
+                <span className="hidden sm:inline">Start Huddle</span>
+              </button>
+            )}
+
             {activeTarget.type === 'channel' && (
               <button
                 type="button"
@@ -748,7 +909,25 @@ export const ChatPane: React.FC<ChatPaneProps> = ({
         )}
 
         {/* Messages Stream */}
-        <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-3.5">
+        <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-3.5 relative">
+          {/* Floating Jump to First Unread Message Button */}
+          {firstUnreadMessageId && rootMessages.some((m) => m.id === firstUnreadMessageId) && (
+            <div className="sticky top-0 z-30 flex justify-center pointer-events-none mb-3">
+              <button
+                type="button"
+                onClick={() => {
+                  firstUnreadRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  setHighlightedMsgId(firstUnreadMessageId);
+                  setTimeout(() => setHighlightedMsgId(null), 2500);
+                }}
+                className="pointer-events-auto flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold shadow-lg shadow-rose-600/30 transition-all active:scale-95 cursor-pointer border border-rose-400/40"
+              >
+                <span>Jump to new messages</span>
+                <ChevronDown className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+
           {rootMessages.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center p-6 select-none">
               <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-2xl mb-3 text-neutral-400">
@@ -780,10 +959,25 @@ export const ChatPane: React.FC<ChatPaneProps> = ({
               const isHighlighted = highlightedMsgId === msg.id;
 
               return (
-                <div
-                  key={msg.id}
-                  id={`msg-${msg.id}`}
-                  className={`group relative flex items-start gap-3 p-2 rounded-2xl transition-all ${
+                <React.Fragment key={msg.id}>
+                  {/* Visual New Messages Bar */}
+                  {msg.id === firstUnreadMessageId && (
+                    <div
+                      ref={firstUnreadRef}
+                      className="my-3 flex items-center gap-3 py-1 select-none animate-in fade-in"
+                    >
+                      <div className="flex-1 h-px bg-rose-500/50" />
+                      <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-500/15 border border-rose-500/40 text-rose-300 text-[11px] font-mono font-bold uppercase tracking-wider shadow-sm">
+                        <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+                        New Messages
+                      </div>
+                      <div className="flex-1 h-px bg-rose-500/50" />
+                    </div>
+                  )}
+
+                  <div
+                    id={`msg-${msg.id}`}
+                    className={`group relative flex items-start gap-3 p-2 rounded-2xl transition-all ${
                     isHighlighted
                       ? 'bg-amber-500/15 ring-1 ring-amber-500/40'
                       : 'hover:bg-white/[0.02]'
@@ -873,10 +1067,10 @@ export const ChatPane: React.FC<ChatPaneProps> = ({
                             </div>
                           )}
 
-                          {/* Text body */}
+                          {/* Text body with syntax highlighted code blocks and @mentions */}
                           {msg.text && (
-                            <div className="text-xs text-neutral-200 leading-relaxed break-words whitespace-pre-wrap selection:bg-indigo-500/30">
-                              {msg.text}
+                            <div className="text-xs text-neutral-200 leading-relaxed break-words selection:bg-indigo-500/30">
+                              <MessageContentRenderer text={msg.text} allUsers={allUsers} />
                               {isSameSender && isMe && (
                                 <span
                                   title={readReceiptTooltip}
@@ -948,14 +1142,22 @@ export const ChatPane: React.FC<ChatPaneProps> = ({
 
                             {att.type === 'file' && (
                               <div className="p-3 flex items-center justify-between gap-3">
-                                <div className="flex items-center gap-2.5 min-w-0">
-                                  <div className="p-2 rounded-lg bg-indigo-600/20 text-indigo-400 shrink-0">
+                                <div
+                                  className="flex items-center gap-2.5 min-w-0 flex-1 cursor-pointer group/doc"
+                                  onClick={() => handleOpenDocPreview(att)}
+                                >
+                                  <div className="p-2 rounded-lg bg-indigo-600/20 text-indigo-400 shrink-0 group-hover/doc:bg-indigo-600/30 transition-colors">
                                     <FileText className="w-4 h-4" />
                                   </div>
                                   <div className="min-w-0">
-                                    <p className="text-xs font-medium text-white truncate">
-                                      {att.name}
-                                    </p>
+                                    <div className="flex items-center gap-1.5">
+                                      <p className="text-xs font-medium text-white truncate group-hover/doc:text-indigo-200 transition-colors">
+                                        {att.name}
+                                      </p>
+                                      <span className="px-1.5 py-0.2 rounded bg-indigo-500/20 text-indigo-300 text-[9px] font-mono border border-indigo-500/30 shrink-0">
+                                        Preview
+                                      </span>
+                                    </div>
                                     {att.size && (
                                       <p className="text-[10px] text-neutral-400 font-mono">
                                         {(att.size / 1024).toFixed(1)} KB
@@ -963,14 +1165,25 @@ export const ChatPane: React.FC<ChatPaneProps> = ({
                                     )}
                                   </div>
                                 </div>
-                                <a
-                                  href={att.url}
-                                  download={att.name}
-                                  className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-neutral-300 hover:text-white transition-colors shrink-0"
-                                  title="Download attachment"
-                                >
-                                  <Download className="w-4 h-4" />
-                                </a>
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleOpenDocPreview(att)}
+                                    className="p-1.5 px-2 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/35 text-indigo-300 transition-colors text-xs flex items-center gap-1 cursor-pointer"
+                                    title="Preview Document Directly"
+                                  >
+                                    <Eye className="w-3.5 h-3.5" />
+                                    <span className="text-[10px] font-medium hidden sm:inline">Preview</span>
+                                  </button>
+                                  <a
+                                    href={att.url}
+                                    download={att.name}
+                                    className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-neutral-300 hover:text-white transition-colors"
+                                    title="Download attachment"
+                                  >
+                                    <Download className="w-3.5 h-3.5" />
+                                  </a>
+                                </div>
                               </div>
                             )}
                           </div>
@@ -1028,6 +1241,51 @@ export const ChatPane: React.FC<ChatPaneProps> = ({
                         <ChevronRight className="w-3 h-3 text-indigo-400 group-hover:translate-x-0.5 transition-transform ml-1" />
                       </button>
                     )}
+
+                    {/* Seen by team members avatars facepile indicator */}
+                    {(() => {
+                      if (!msg.readBy) return null;
+                      const seenReaders = Object.entries(msg.readBy)
+                        .filter(([uid]) => uid !== msg.senderId)
+                        .map(([uid, readIso]) => ({
+                          user: allUsers.find((u) => u.id === uid),
+                          time: new Date(String(readIso)),
+                        }))
+                        .filter((item): item is { user: User; time: Date } => !!item.user);
+
+                      if (seenReaders.length === 0) return null;
+
+                      return (
+                        <div className="flex items-center gap-1.5 mt-2 select-none group/seen">
+                          <div className="flex -space-x-1.5 overflow-hidden py-0.5 items-center">
+                            {seenReaders.slice(0, 5).map(({ user, time }) => (
+                              <span
+                                key={user.id}
+                                className="inline-flex items-center justify-center w-5 h-5 rounded-full ring-2 ring-[#0d0e12] bg-[#1a1c26] text-[11px] cursor-pointer hover:z-20 hover:scale-115 transition-all shadow-sm"
+                                title={`Seen by ${user.displayName} at ${time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
+                              >
+                                {user.avatar?.startsWith('data:') ? (
+                                  <img src={user.avatar} alt={user.displayName} className="w-full h-full object-cover rounded-full" />
+                                ) : (
+                                  user.avatar || '👤'
+                                )}
+                              </span>
+                            ))}
+                            {seenReaders.length > 5 && (
+                              <span
+                                className="inline-flex items-center justify-center w-5 h-5 rounded-full ring-2 ring-[#0d0e12] bg-white/10 text-[9px] font-mono text-neutral-300 font-medium"
+                                title={`Seen by ${seenReaders.slice(5).map((s) => s.user.displayName).join(', ')}`}
+                              >
+                                +{seenReaders.length - 5}
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-[10px] text-neutral-400 font-mono">
+                            Seen by {seenReaders.length === 1 ? seenReaders[0].user.displayName : `${seenReaders.length} members`}
+                          </span>
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   {/* Floating Hover Actions */}
@@ -1069,7 +1327,7 @@ export const ChatPane: React.FC<ChatPaneProps> = ({
                       <Heart className="w-3.5 h-3.5" />
                     </button>
 
-                    {/* Emoji picker trigger */}
+                    {/* Emoji reaction popover trigger */}
                     <div className="relative">
                       <button
                         type="button"
@@ -1078,29 +1336,25 @@ export const ChatPane: React.FC<ChatPaneProps> = ({
                             activeReactionPickerMsgId === msg.id ? null : msg.id
                           )
                         }
-                        className="p-1.5 text-neutral-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                        className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                          activeReactionPickerMsgId === msg.id
+                            ? 'text-indigo-400 bg-white/15'
+                            : 'text-neutral-400 hover:text-white hover:bg-white/10'
+                        }`}
                         title="Add reaction"
                       >
                         <Smile className="w-3.5 h-3.5" />
                       </button>
 
-                      {activeReactionPickerMsgId === msg.id && (
-                        <div className="absolute right-0 bottom-full mb-1 flex items-center gap-1 p-1.5 bg-[#1f222e] border border-white/15 rounded-2xl shadow-2xl z-30 animate-in fade-in">
-                          {COMMON_REACTIONS.map((emoji) => (
-                            <button
-                              key={emoji}
-                              type="button"
-                              onClick={() => {
-                                onReactMessage(msg.id, emoji);
-                                setActiveReactionPickerMsgId(null);
-                              }}
-                              className="p-1.5 hover:bg-white/10 rounded-lg text-sm transition-transform hover:scale-125"
-                            >
-                              {emoji}
-                            </button>
-                          ))}
-                        </div>
-                      )}
+                      <EmojiPopover
+                        isOpen={activeReactionPickerMsgId === msg.id}
+                        onClose={() => setActiveReactionPickerMsgId(null)}
+                        onSelectEmoji={(emoji) => {
+                          onReactMessage(msg.id, emoji);
+                          setActiveReactionPickerMsgId(null);
+                        }}
+                        position="top-right"
+                      />
                     </div>
 
                     {/* Translate */}
@@ -1129,7 +1383,8 @@ export const ChatPane: React.FC<ChatPaneProps> = ({
                     )}
                   </div>
                 </div>
-              );
+              </React.Fragment>
+            );
             })
           )}
           <div ref={messagesEndRef} />
@@ -1252,69 +1507,126 @@ export const ChatPane: React.FC<ChatPaneProps> = ({
                     </div>
                   )}
 
-                  <div className="flex items-end gap-2 bg-[#1b1e28] border border-white/10 rounded-2xl p-2 focus-within:border-indigo-500/75 transition-colors">
-                    {/* Hidden file input */}
-                    <input
-                      type="file"
-                      ref={fileInputRef}
-                      onChange={handleFileChange}
-                      multiple
-                      className="hidden"
-                      accept="image/*,video/*,audio/*,.pdf,.txt,.doc,.docx,.zip"
-                    />
+                  <div className="relative">
+                    {/* @ Mention Autocomplete Popup */}
+                    {mentionQuery !== null && matchingMentionUsers.length > 0 && (
+                      <div className="absolute bottom-full left-0 mb-2 w-72 bg-[#181a26] border border-indigo-500/30 rounded-2xl shadow-2xl p-1.5 z-40 animate-in fade-in zoom-in-95">
+                        <div className="px-2.5 py-1 text-[10px] font-mono text-indigo-300 font-bold uppercase border-b border-white/5 flex items-center justify-between">
+                          <span>Mention Team Member</span>
+                          <span className="text-[9px] text-neutral-500">↑↓ to navigate, ↵ to select</span>
+                        </div>
+                        <div className="max-h-48 overflow-y-auto mt-1 space-y-0.5">
+                          {matchingMentionUsers.map((user, idx) => {
+                            const isSelected = idx === selectedMentionIdx;
+                            return (
+                              <button
+                                key={user.id}
+                                type="button"
+                                onClick={() => handleSelectMention(user)}
+                                onMouseEnter={() => setSelectedMentionIdx(idx)}
+                                className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-left transition-colors cursor-pointer ${
+                                  isSelected ? 'bg-indigo-600/30 text-white' : 'text-neutral-300 hover:bg-white/5'
+                                }`}
+                              >
+                                <div className="w-6 h-6 rounded-lg bg-neutral-800 border border-white/10 flex items-center justify-center text-xs overflow-hidden shrink-0">
+                                  {user.avatar?.startsWith('data:') ? (
+                                    <img src={user.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                                  ) : (
+                                    user.avatar || '👤'
+                                  )}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="text-xs font-semibold truncate">{user.displayName}</span>
+                                    {user.isLeader && (
+                                      <span className="text-[8px] font-mono px-1 py-0.2 rounded bg-amber-500/20 text-amber-300">
+                                        LEADER
+                                      </span>
+                                    )}
+                                  </div>
+                                  <span className="text-[10px] text-neutral-400 font-mono">@{user.username}</span>
+                                </div>
+                                <span
+                                  className={`w-2 h-2 rounded-full shrink-0 ${
+                                    user.status === 'online'
+                                      ? 'bg-emerald-400'
+                                      : user.status === 'idle'
+                                      ? 'bg-amber-400'
+                                      : 'bg-neutral-600'
+                                  }`}
+                                />
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
 
-                    {/* Attachments & GIF & Mic buttons */}
-                    <div className="flex items-center gap-0.5 pb-1">
+                    <div className="flex items-end gap-2 bg-[#1b1e28] border border-white/10 rounded-2xl p-2 focus-within:border-indigo-500/75 transition-colors">
+                      {/* Hidden file input */}
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleFileChange}
+                        multiple
+                        className="hidden"
+                        accept="image/*,video/*,audio/*,.pdf,.txt,.doc,.docx,.zip"
+                      />
+
+                      {/* Attachments & GIF & Mic buttons */}
+                      <div className="flex items-center gap-0.5 pb-1">
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          className="p-2 text-neutral-400 hover:text-white rounded-xl hover:bg-white/5 transition-colors"
+                          title="Attach file or image"
+                        >
+                          <Paperclip className="w-4 h-4" />
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={onOpenGifModal}
+                          className="px-2 py-1 text-[11px] font-bold text-neutral-400 hover:text-white rounded-xl hover:bg-white/5 transition-colors font-mono tracking-wider"
+                          title="Send tactical GIF"
+                        >
+                          GIF
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={startRecording}
+                          className="p-2 text-neutral-400 hover:text-rose-400 rounded-xl hover:bg-white/5 transition-colors"
+                          title="Record voice note"
+                        >
+                          <Mic className="w-4 h-4" />
+                        </button>
+                      </div>
+
+                      {/* Textarea */}
+                      <textarea
+                        ref={textareaRef}
+                        value={inputText}
+                        onChange={handleInputChange}
+                        onKeyDown={handleKeyDown}
+                        placeholder={`Dispatch transmission to ${
+                          activeTarget.type === 'channel' ? `#${activeTarget.name}` : activeTarget.name
+                        }… (Enter to send)`}
+                        rows={1}
+                        className="flex-1 max-h-32 min-h-[40px] py-2 px-1 bg-transparent text-xs text-white placeholder:text-neutral-500 resize-none focus:outline-none leading-relaxed"
+                      />
+
+                      {/* Send Button */}
                       <button
                         type="button"
-                        onClick={() => fileInputRef.current?.click()}
-                        className="p-2 text-neutral-400 hover:text-white rounded-xl hover:bg-white/5 transition-colors"
-                        title="Attach file or image"
+                        onClick={handleSend}
+                        disabled={!inputText.trim() && stagedAttachments.length === 0}
+                        className="p-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white transition-all disabled:opacity-40 disabled:hover:bg-indigo-600 shadow-md shadow-indigo-600/20 shrink-0 mb-0.5 cursor-pointer"
+                        title="Send message"
                       >
-                        <Paperclip className="w-4 h-4" />
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={onOpenGifModal}
-                        className="px-2 py-1 text-[11px] font-bold text-neutral-400 hover:text-white rounded-xl hover:bg-white/5 transition-colors font-mono tracking-wider"
-                        title="Send tactical GIF"
-                      >
-                        GIF
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={startRecording}
-                        className="p-2 text-neutral-400 hover:text-rose-400 rounded-xl hover:bg-white/5 transition-colors"
-                        title="Record voice note"
-                      >
-                        <Mic className="w-4 h-4" />
+                        <Send className="w-4 h-4" />
                       </button>
                     </div>
-
-                    {/* Textarea */}
-                    <textarea
-                      value={inputText}
-                      onChange={handleInputChange}
-                      onKeyDown={handleKeyDown}
-                      placeholder={`Dispatch transmission to ${
-                        activeTarget.type === 'channel' ? `#${activeTarget.name}` : activeTarget.name
-                      }… (Enter to send)`}
-                      rows={1}
-                      className="flex-1 max-h-32 min-h-[40px] py-2 px-1 bg-transparent text-xs text-white placeholder:text-neutral-500 resize-none focus:outline-none leading-relaxed"
-                    />
-
-                    {/* Send Button */}
-                    <button
-                      type="button"
-                      onClick={handleSend}
-                      disabled={!inputText.trim() && stagedAttachments.length === 0}
-                      className="p-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white transition-all disabled:opacity-40 disabled:hover:bg-indigo-600 shadow-md shadow-indigo-600/20 shrink-0 mb-0.5 cursor-pointer"
-                      title="Send message"
-                    >
-                      <Send className="w-4 h-4" />
-                    </button>
                   </div>
                 </div>
               )}
@@ -1471,9 +1783,9 @@ export const ChatPane: React.FC<ChatPaneProps> = ({
                       })()}
 
                       {reply.text && (
-                        <p className="text-xs text-neutral-200 mt-1 leading-relaxed break-words whitespace-pre-wrap">
-                          {reply.text}
-                        </p>
+                        <div className="text-xs text-neutral-200 mt-1 leading-relaxed break-words">
+                          <MessageContentRenderer text={reply.text} allUsers={allUsers} />
+                        </div>
                       )}
 
                       {/* Attachments in thread */}
@@ -1500,11 +1812,32 @@ export const ChatPane: React.FC<ChatPaneProps> = ({
                                 </div>
                               )}
                               {att.type === 'file' && (
-                                <div className="p-2 bg-white/5 flex items-center justify-between text-xs">
-                                  <span className="truncate">{att.name}</span>
-                                  <a href={att.url} download={att.name} className="p-1 text-neutral-400 hover:text-white">
-                                    <Download className="w-3 h-3" />
-                                  </a>
+                                <div className="p-2 bg-white/5 flex items-center justify-between text-xs gap-2">
+                                  <div
+                                    className="flex items-center gap-1.5 min-w-0 flex-1 cursor-pointer hover:text-indigo-300 transition-colors"
+                                    onClick={() => handleOpenDocPreview(att)}
+                                  >
+                                    <FileText className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                                    <span className="truncate">{att.name}</span>
+                                  </div>
+                                  <div className="flex items-center gap-1 shrink-0">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleOpenDocPreview(att)}
+                                      className="p-1 text-indigo-400 hover:text-indigo-300 hover:bg-white/10 rounded transition-colors"
+                                      title="Preview Document"
+                                    >
+                                      <Eye className="w-3 h-3" />
+                                    </button>
+                                    <a
+                                      href={att.url}
+                                      download={att.name}
+                                      className="p-1 text-neutral-400 hover:text-white hover:bg-white/10 rounded transition-colors"
+                                      title="Download file"
+                                    >
+                                      <Download className="w-3 h-3" />
+                                    </a>
+                                  </div>
                                 </div>
                               )}
                             </div>
@@ -1679,6 +2012,12 @@ export const ChatPane: React.FC<ChatPaneProps> = ({
           </div>
         </aside>
       )}
+
+      {/* Document & PDF In-App Preview Modal */}
+      <DocumentPreviewModal
+        attachment={docPreviewAttachment}
+        onClose={() => setDocPreviewAttachment(null)}
+      />
     </div>
   );
 };

@@ -17,7 +17,7 @@ import type { User, Channel, ActiveTab, ChatTarget } from '../types';
 interface CommandPaletteProps {
   isOpen: boolean;
   onClose: () => void;
-  currentUser: User;
+  currentUser?: User | null;
   allUsers: User[];
   channels: Channel[];
   onlineUserIds: string[];
@@ -67,8 +67,9 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
 
   if (!isOpen) return null;
 
-  const myChannels = channels.filter((c) => c.memberIds.includes(currentUser.id));
-  const otherUsers = allUsers.filter((u) => u.id !== currentUser.id);
+  const currentId = currentUser?.id;
+  const myChannels = channels.filter((c) => currentId ? c.memberIds.includes(currentId) : true);
+  const otherUsers = allUsers.filter((u) => u.id !== currentId);
 
   // Build items list
   const channelItems: PaletteItem[] = myChannels.map((c) => ({

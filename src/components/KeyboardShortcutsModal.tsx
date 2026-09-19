@@ -18,6 +18,7 @@ const SHORTCUTS: ShortcutCategory[] = [
   {
     title: 'Navigation & Palettes',
     items: [
+      { keys: ['⌘', 'F'], description: 'Search across all message transmissions & history' },
       { keys: ['⌘', 'K'], description: 'Open Quick Switcher / Command Palette' },
       { keys: ['⌘', '⇧', 'C'], description: 'Switch to Calendar view' },
       { keys: ['⌘', '⇧', 'N'], description: 'Switch to Executive News feed' },

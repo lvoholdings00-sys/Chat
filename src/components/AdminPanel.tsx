@@ -13,6 +13,7 @@ import {
   Plus,
 } from 'lucide-react';
 import type { User, Channel, Message } from '../types';
+import { AdminTelemetryDashboard } from './AdminTelemetryDashboard';
 
 interface DmThreadSummary {
   id: string;
@@ -195,6 +196,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       </div>
 
       <div className="max-w-4xl w-full mx-auto space-y-8">
+        {/* RECHARTS DASHBOARD: 30-DAY MESSAGE VOLUME & ACTIVE USER TRENDS */}
+        <AdminTelemetryDashboard />
+
         {/* CARD: ADD A MEMBER */}
         <div className="bg-[#14161f] border border-white/10 rounded-2xl p-6 shadow-xl">
           <div className="flex items-center gap-2 mb-4">

@@ -1,1 +1,114 @@
 @import "tailwindcss";
+
+/* Theme Palettes */
+:root, [data-theme="midnight"], [data-theme="dark"] {
+  --bg-app: #0d0e12;
+  --bg-rail: #121319;
+  --bg-header: #151720;
+  --bg-card: #181a24;
+  --accent-primary: #6366f1;
+}
+
+[data-theme="slate"] {
+  --bg-app: #080d16;
+  --bg-rail: #0e1626;
+  --bg-header: #131e33;
+  --bg-card: #17243d;
+  --accent-primary: #0284c7;
+}
+
+[data-theme="emerald"] {
+  --bg-app: #07100b;
+  --bg-rail: #0b1812;
+  --bg-header: #10241b;
+  --bg-card: #142e23;
+  --accent-primary: #10b981;
+}
+
+[data-theme="amber"] {
+  --bg-app: #110d0a;
+  --bg-rail: #1a1410;
+  --bg-header: #241c16;
+  --bg-card: #2e241c;
+  --accent-primary: #d97706;
+}
+
+[data-theme="light"] {
+  --bg-app: #f4f5f8;
+  --bg-rail: #ffffff;
+  --bg-header: #f8fafc;
+  --bg-card: #ffffff;
+  --accent-primary: #4f46e5;
+}
+
+/* Light theme overrides for high contrast readability */
+[data-theme="light"] aside {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+[data-theme="light"] aside nav {
+  background-color: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+}
+[data-theme="light"] .bg-\[\#121319\] {
+  background-color: #ffffff !important;
+}
+[data-theme="light"] .bg-\[\#151720\], [data-theme="light"] .bg-\[\#151722\] {
+  background-color: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+}
+[data-theme="light"] .bg-\[\#0d0e12\] {
+  background-color: #f1f3f7 !important;
+}
+[data-theme="light"] .border-white\/10, [data-theme="light"] .border-white\/5, [data-theme="light"] .border-white\/15 {
+  border-color: rgba(0, 0, 0, 0.08) !important;
+}
+[data-theme="light"] .text-white {
+  color: #0f172a !important;
+}
+[data-theme="light"] .text-neutral-200, [data-theme="light"] .text-neutral-300 {
+  color: #334155 !important;
+}
+[data-theme="light"] .text-neutral-400 {
+  color: #64748b !important;
+}
+[data-theme="light"] .bg-white\/5 {
+  background-color: rgba(0, 0, 0, 0.04) !important;
+}
+[data-theme="light"] .bg-white\/10 {
+  background-color: rgba(0, 0, 0, 0.07) !important;
+}
+
+/* Slate / Navy Palette Nuances */
+[data-theme="slate"] .bg-\[\#121319\] {
+  background-color: #0e1626 !important;
+}
+[data-theme="slate"] .bg-\[\#151720\], [data-theme="slate"] .bg-\[\#151722\] {
+  background-color: #131e33 !important;
+}
+[data-theme="slate"] .bg-\[\#0d0e12\] {
+  background-color: #080d16 !important;
+}
+
+/* Emerald Palette Nuances */
+[data-theme="emerald"] .bg-\[\#121319\] {
+  background-color: #0b1812 !important;
+}
+[data-theme="emerald"] .bg-\[\#151720\], [data-theme="emerald"] .bg-\[\#151722\] {
+  background-color: #10241b !important;
+}
+[data-theme="emerald"] .bg-\[\#0d0e12\] {
+  background-color: #07100b !important;
+}
+
+/* Amber Palette Nuances */
+[data-theme="amber"] .bg-\[\#121319\] {
+  background-color: #1a1410 !important;
+}
+[data-theme="amber"] .bg-\[\#151720\], [data-theme="amber"] .bg-\[\#151722\] {
+  background-color: #241c16 !important;
+}
+[data-theme="amber"] .bg-\[\#0d0e12\] {
+  background-color: #110d0a !important;
+}
+
