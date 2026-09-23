@@ -150,7 +150,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search all transmissions, logs, and files across history…"
+            placeholder="Search messages, files, and people…"
             className="flex-1 bg-transparent text-sm text-white placeholder:text-neutral-500 focus:outline-none"
           />
           {loading && <Loader2 className="w-4 h-4 text-indigo-400 animate-spin shrink-0" />}
@@ -184,7 +184,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                   : 'text-neutral-400 hover:text-white hover:bg-white/5 border border-transparent'
               }`}
             >
-              All Transmissions
+              All Messages
             </button>
             <button
               type="button"
