@@ -580,7 +580,7 @@ export const ChatPane: React.FC<ChatPaneProps> = ({
 
           if (sendImmediatelyRef.current) {
             onSendMessage('', [newAtt]).catch((err) =>
-              console.error('Failed to dispatch voice transmission:', err)
+              console.error('Failed to send voice message:', err)
             );
           } else {
             setStagedAttachments((prev) => [...prev, newAtt]);
@@ -823,7 +823,7 @@ export const ChatPane: React.FC<ChatPaneProps> = ({
                   ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
                   : 'text-neutral-400 hover:text-white border-transparent hover:bg-white/10'
               }`}
-              title="View Pinned Transmissions"
+              title="View Pinned Messages"
             >
               <Pin className={`w-4 h-4 ${pinnedMessages.length > 0 ? 'text-amber-400' : ''}`} />
               {pinnedMessages.length > 0 && (
@@ -880,7 +880,7 @@ export const ChatPane: React.FC<ChatPaneProps> = ({
                   Pinned Dispatch:
                 </span>
                 <span className="text-neutral-300 truncate">
-                  {latestPinnedMessage.text || 'Shared attachment transmission'}
+                  {latestPinnedMessage.text || 'Shared an attachment'}
                 </span>
               </div>
             </div>
@@ -930,14 +930,14 @@ export const ChatPane: React.FC<ChatPaneProps> = ({
 
           {rootMessages.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center p-6 select-none">
-              <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-2xl mb-3 text-neutral-400">
-                ⚡
+              <div className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-2xl mb-3 text-neutral-400">
+                💬
               </div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-neutral-300">
-                Transmission Channel Initialized
+              <p className="text-sm font-semibold text-neutral-300">
+                No messages yet
               </p>
               <p className="text-[11px] text-neutral-500 mt-1 max-w-xs">
-                No previous transmissions logged. Send a secure dispatch to open communication.
+                Say hello and start the conversation.
               </p>
             </div>
           ) : (
@@ -1095,7 +1095,7 @@ export const ChatPane: React.FC<ChatPaneProps> = ({
                         <Globe className="w-3.5 h-3.5 text-indigo-400 shrink-0 mt-0.5" />
                         <div>
                           <p className="text-[10px] text-indigo-400 font-mono uppercase font-semibold">
-                            AI Translated Transmission:
+                            Translated:
                           </p>
                           <p className="mt-0.5 text-white">{translatedText}</p>
                         </div>
@@ -1312,7 +1312,7 @@ export const ChatPane: React.FC<ChatPaneProps> = ({
                           ? 'text-amber-400 hover:bg-amber-500/10'
                           : 'text-neutral-400 hover:text-amber-400 hover:bg-white/10'
                       }`}
-                      title={msg.isPinned ? 'Unpin transmission' : 'Pin transmission to channel banner'}
+                      title={msg.isPinned ? 'Unpin message' : 'Pin message to channel banner'}
                     >
                       {msg.isPinned ? <PinOff className="w-3.5 h-3.5" /> : <Pin className="w-3.5 h-3.5" />}
                     </button>
@@ -1364,7 +1364,7 @@ export const ChatPane: React.FC<ChatPaneProps> = ({
                         onClick={() => handleTranslate(msg)}
                         disabled={isTranslating}
                         className="p-1.5 text-neutral-400 hover:text-indigo-300 hover:bg-white/10 rounded-lg transition-colors"
-                        title="Translate transmission"
+                        title="Translate message"
                       >
                         <Globe className="w-3.5 h-3.5" />
                       </button>
@@ -1376,7 +1376,7 @@ export const ChatPane: React.FC<ChatPaneProps> = ({
                         type="button"
                         onClick={() => onDeleteMessage(msg.id)}
                         className="p-1.5 text-neutral-400 hover:text-rose-400 hover:bg-white/10 rounded-lg transition-colors"
-                        title="Delete transmission"
+                        title="Delete message"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -1473,7 +1473,7 @@ export const ChatPane: React.FC<ChatPaneProps> = ({
                       type="button"
                       onClick={() => stopRecording(true)}
                       className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-500 text-white font-semibold text-xs rounded-xl shadow-md shadow-rose-600/30 flex items-center gap-1.5 active:scale-95 transition-all cursor-pointer"
-                      title="Stop and send voice transmission immediately"
+                      title="Stop and send voice message immediately"
                     >
                       <Send className="w-3.5 h-3.5" /> Send Voice Clip
                     </button>
@@ -1588,7 +1588,7 @@ export const ChatPane: React.FC<ChatPaneProps> = ({
                           type="button"
                           onClick={onOpenGifModal}
                           className="px-2 py-1 text-[11px] font-bold text-neutral-400 hover:text-white rounded-xl hover:bg-white/5 transition-colors font-mono tracking-wider"
-                          title="Send tactical GIF"
+                          title="Send GIF"
                         >
                           GIF
                         </button>
@@ -1609,9 +1609,9 @@ export const ChatPane: React.FC<ChatPaneProps> = ({
                         value={inputText}
                         onChange={handleInputChange}
                         onKeyDown={handleKeyDown}
-                        placeholder={`Dispatch transmission to ${
+                        placeholder={`Message ${
                           activeTarget.type === 'channel' ? `#${activeTarget.name}` : activeTarget.name
-                        }… (Enter to send)`}
+                        }`}
                         rows={1}
                         className="flex-1 max-h-32 min-h-[40px] py-2 px-1 bg-transparent text-xs text-white placeholder:text-neutral-500 resize-none focus:outline-none leading-relaxed"
                       />
@@ -1923,7 +1923,7 @@ export const ChatPane: React.FC<ChatPaneProps> = ({
                 <Pin className="w-4 h-4" />
               </div>
               <div className="min-w-0">
-                <h3 className="text-xs font-semibold text-white truncate">Pinned Transmissions</h3>
+                <h3 className="text-xs font-semibold text-white truncate">Pinned Messages</h3>
                 <p className="text-[10px] text-neutral-400 font-mono">
                   {pinnedMessages.length} pinned in this channel
                 </p>
@@ -1943,7 +1943,7 @@ export const ChatPane: React.FC<ChatPaneProps> = ({
             {pinnedMessages.length === 0 ? (
               <div className="py-12 text-center text-neutral-500">
                 <Pin className="w-6 h-6 mx-auto mb-2 text-neutral-600" />
-                <p className="text-xs font-medium text-neutral-400">No pinned transmissions</p>
+                <p className="text-xs font-medium text-neutral-400">No pinned messages</p>
                 <p className="text-[10px] text-neutral-500 mt-1 max-w-xs mx-auto">
                   Hover over any important message and click the pin icon to keep critical information accessible.
                 </p>
