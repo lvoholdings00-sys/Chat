@@ -69,7 +69,7 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
             </div>
             <div>
               <h3 className="text-sm font-semibold text-white">Schedule Message</h3>
-              <p className="text-[11px] text-neutral-400">Deliver transmission at a future time</p>
+              <p className="text-[11px] text-neutral-400">Deliver message at a future time</p>
             </div>
           </div>
           <button
