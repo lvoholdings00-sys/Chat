@@ -114,7 +114,7 @@ export const AvatarModal: React.FC<AvatarModalProps> = ({
                 : 'text-neutral-400 hover:text-white'
             }`}
           >
-            Tactical Symbols
+            Symbols
           </button>
           <button
             type="button"
