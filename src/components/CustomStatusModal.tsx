@@ -16,7 +16,7 @@ const PRESET_STATUSES: { emoji: string; text: string }[] = [
   { emoji: '⚡', text: 'In deep focus' },
   { emoji: '🛡️', text: 'Perimeter patrol' },
   { emoji: '🛰️', text: 'Field operations' },
-  { emoji: '👑', text: 'Command briefing' },
+  { emoji: '👑', text: 'In a meeting' },
   { emoji: '✈️', text: 'Traveling' },
 ];
 
@@ -124,7 +124,7 @@ export const CustomStatusModal: React.FC<CustomStatusModalProps> = ({
                 type="text"
                 value={statusText}
                 onChange={(e) => setStatusText(e.target.value)}
-                placeholder="What's your current tactical status? (e.g. In a meeting)"
+                placeholder="What's your status? (e.g. In a meeting)"
                 maxLength={60}
                 className="flex-1 bg-transparent text-xs text-white placeholder:text-neutral-500 focus:outline-none"
                 onKeyDown={(e) => {
@@ -152,7 +152,7 @@ export const CustomStatusModal: React.FC<CustomStatusModalProps> = ({
           {/* Quick Presets */}
           <div>
             <label className="block text-[11px] font-mono uppercase tracking-wider text-neutral-400 mb-2">
-              Tactical Presets
+              Quick Presets
             </label>
             <div className="grid grid-cols-2 gap-1.5">
               {PRESET_STATUSES.map((preset) => {
