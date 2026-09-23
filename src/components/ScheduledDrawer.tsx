@@ -78,7 +78,7 @@ export const ScheduledDrawer: React.FC<ScheduledDrawerProps> = ({
             <Clock className="w-4 h-4" />
           </div>
           <div className="min-w-0">
-            <h3 className="text-xs font-semibold text-white truncate">Scheduled Transmissions</h3>
+            <h3 className="text-xs font-semibold text-white truncate">Scheduled Messages</h3>
             <p className="text-[10px] text-neutral-400 font-mono">
               {relevantList.length} queued for delivery
             </p>
@@ -101,7 +101,7 @@ export const ScheduledDrawer: React.FC<ScheduledDrawerProps> = ({
         ) : relevantList.length === 0 ? (
           <div className="py-12 text-center text-neutral-500">
             <Clock className="w-6 h-6 mx-auto mb-2 text-neutral-600" />
-            <p className="text-xs font-medium text-neutral-400">No scheduled transmissions</p>
+            <p className="text-xs font-medium text-neutral-400">No scheduled messages</p>
             <p className="text-[10px] text-neutral-500 mt-1 max-w-xs mx-auto">
               Use the clock icon next to the message field to queue messages for automatic delivery at a specific time.
             </p>
