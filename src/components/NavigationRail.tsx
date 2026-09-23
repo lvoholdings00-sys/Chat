@@ -167,11 +167,11 @@ export const NavigationRail: React.FC<NavigationRailProps> = ({
   };
 
   const themeOptions: { id: AppTheme; name: string; desc: string; colors: string[] }[] = [
-    { id: 'midnight', name: 'Midnight Tactical', desc: 'Obsidian dark with indigo glow', colors: ['#0d0e12', '#121319', '#6366f1'] },
-    { id: 'slate', name: 'Cyber Slate', desc: 'Deep ocean navy with cyan glow', colors: ['#080d16', '#0e1626', '#0284c7'] },
-    { id: 'emerald', name: 'Tactical Emerald', desc: 'Matrix stealth with mint green', colors: ['#07100b', '#0b1812', '#10b981'] },
-    { id: 'amber', name: 'Solar Amber', desc: 'Titanium bronze with warm gold', colors: ['#110d0a', '#1a1410', '#d97706'] },
-    { id: 'light', name: 'Studio Light', desc: 'High-contrast architectural light canvas', colors: ['#f4f5f8', '#ffffff', '#4f46e5'] },
+    { id: 'midnight', name: 'Midnight', desc: 'Obsidian dark with indigo glow', colors: ['#0d0e12', '#121319', '#6366f1'] },
+    { id: 'slate', name: 'Slate', desc: 'Deep ocean navy with cyan glow', colors: ['#080d16', '#0e1626', '#0284c7'] },
+    { id: 'emerald', name: 'Emerald', desc: 'Deep green with mint accent', colors: ['#07100b', '#0b1812', '#10b981'] },
+    { id: 'amber', name: 'Amber', desc: 'Warm bronze with gold accent', colors: ['#110d0a', '#1a1410', '#d97706'] },
+    { id: 'light', name: 'Light', desc: 'Clean high-contrast light theme', colors: ['#f4f5f8', '#ffffff', '#4f46e5'] },
   ];
 
   const hasAnyMatches = visibleChannels.length > 0 || visibleUsers.length > 0 || matchingMessages.length > 0;
@@ -490,7 +490,7 @@ export const NavigationRail: React.FC<NavigationRailProps> = ({
           </div>
         ) : !hasAnyMatches && searchLower ? (
           <div className="py-8 text-center px-4">
-            <p className="text-xs text-neutral-400">No channels or personnel match "{searchQuery}"</p>
+            <p className="text-xs text-neutral-400">No channels or people match "{searchQuery}"</p>
             <button
               type="button"
               onClick={() => setSearchQuery('')}
@@ -703,7 +703,7 @@ export const NavigationRail: React.FC<NavigationRailProps> = ({
             }`}
           />
           <span className="text-[11px] font-mono text-neutral-400">
-            {isRealtimeConnected ? 'LIVE SYNC' : 'RECONNECTING'}
+            {isRealtimeConnected ? 'Connected' : 'Reconnecting…'}
           </span>
         </div>
 
@@ -806,7 +806,7 @@ export const NavigationRail: React.FC<NavigationRailProps> = ({
             type="button"
             onClick={() => setShowSettingsPopover(!showSettingsPopover)}
             className="p-1.5 text-neutral-400 hover:text-white rounded-lg hover:bg-white/10 transition-colors"
-            title="Settings & Personnel Options"
+            title="Settings & Members"
           >
             <Settings className="w-4 h-4" />
           </button>
