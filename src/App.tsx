@@ -949,7 +949,7 @@ export default function App() {
 
   // If not authenticated, show login
   if (!currentUser) {
-    return <LoginScreen onLogin={handleLogin} preloadedUsers={users} />;
+    return <LoginScreen onLogin={handleLogin} />;
   }
 
   // Active channel for manage modal
