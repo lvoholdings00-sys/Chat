@@ -18,7 +18,7 @@ const SHORTCUTS: ShortcutCategory[] = [
   {
     title: 'Navigation & Palettes',
     items: [
-      { keys: ['⌘', 'F'], description: 'Search across all message transmissions & history' },
+      { keys: ['⌘', 'F'], description: 'Search across all messages & history' },
       { keys: ['⌘', 'K'], description: 'Open Quick Switcher / Command Palette' },
       { keys: ['⌘', '⇧', 'C'], description: 'Switch to Calendar view' },
       { keys: ['⌘', '⇧', 'N'], description: 'Switch to Executive News feed' },
@@ -29,14 +29,14 @@ const SHORTCUTS: ShortcutCategory[] = [
     ],
   },
   {
-    title: 'Messaging & Transmissions',
+    title: 'Messaging',
     items: [
-      { keys: ['Enter'], description: 'Send transmission or thread reply' },
+      { keys: ['Enter'], description: 'Send message or thread reply' },
       { keys: ['⇧', 'Enter'], description: 'Insert new line in message composer' },
       { keys: ['Hover msg', '+ Reply'], description: 'Open dedicated nested thread conversation' },
-      { keys: ['Hover msg', '+ Pin'], description: 'Pin critical transmission to channel banner' },
+      { keys: ['Hover msg', '+ Pin'], description: 'Pin critical message to channel banner' },
       { keys: ['Hover msg', '+ ❤️'], description: 'Quick react with heart telemetry' },
-      { keys: ['Hover msg', '+ 🌐'], description: 'Translate transmission via Gemini AI' },
+      { keys: ['Hover msg', '+ 🌐'], description: 'Translate message' },
     ],
   },
   {
@@ -73,7 +73,7 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({ 
             <div>
               <h3 className="text-sm font-semibold text-white">Keyboard Shortcuts</h3>
               <p className="text-[11px] text-neutral-400">
-                Power-user hotkeys for rapid tactical operations
+                Power-user hotkeys for getting around fast
               </p>
             </div>
           </div>
