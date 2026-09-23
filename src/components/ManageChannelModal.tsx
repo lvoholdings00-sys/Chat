@@ -71,7 +71,7 @@ export const ManageChannelModal: React.FC<ManageChannelModalProps> = ({
   };
 
   const handleDelete = async () => {
-    if (!window.confirm(`Permanently decommission #${channel.name}?`)) return;
+    if (!window.confirm(`Permanently delete #${channel.name}?`)) return;
     setDeleting(true);
     try {
       await onDeleteChannel(channel.id);
@@ -187,7 +187,7 @@ export const ManageChannelModal: React.FC<ManageChannelModalProps> = ({
           {canManage && unassignedUsers.length > 0 && (
             <div>
               <label className="block text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-2">
-                Add Personnel
+                Add People
               </label>
               <div className="flex gap-2">
                 <select
