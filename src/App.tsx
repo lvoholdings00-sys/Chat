@@ -967,7 +967,7 @@ export default function App() {
       {currentUser && !isRealtimeConnected && (
         <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2.5 px-4 py-2 rounded-full bg-[#181a24]/90 border border-amber-500/40 text-amber-300 text-xs font-mono backdrop-blur-md shadow-2xl animate-in fade-in slide-in-from-top-3">
           <RefreshCw className="w-3.5 h-3.5 animate-spin text-amber-400 shrink-0" />
-          <span>WebSocket disconnected — reconnecting to live comms...</span>
+          <span>WebSocket disconnected — reconnecting…</span>
         </div>
       )}
 
@@ -1132,7 +1132,7 @@ export default function App() {
           handleSendMessage('', [
             {
               id: `gif_${Date.now()}`,
-              name: 'Tactical Reaction GIF',
+              name: 'Reaction GIF',
               type: 'image',
               url: gifUrl,
             },
