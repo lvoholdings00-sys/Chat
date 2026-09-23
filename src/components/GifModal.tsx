@@ -40,7 +40,7 @@ export const GifModal: React.FC<GifModalProps> = ({ isOpen, onClose, onSelectGif
         <div className="flex items-center justify-between pb-4 border-b border-white/10 shrink-0">
           <div>
             <h2 className="font-['Fraunces'] text-xl font-semibold text-white tracking-wide">Send GIF</h2>
-            <p className="text-xs text-neutral-400 mt-0.5">Quick tactical visual reactions.</p>
+            <p className="text-xs text-neutral-400 mt-0.5">Quick visual reactions.</p>
           </div>
           <button
             onClick={onClose}
@@ -89,7 +89,7 @@ export const GifModal: React.FC<GifModalProps> = ({ isOpen, onClose, onSelectGif
           ))}
           {filteredGifs.length === 0 && (
             <div className="col-span-3 py-10 text-center text-xs text-neutral-400">
-              No matching tactical GIFs found.
+              No matching GIFs found.
             </div>
           )}
         </div>
