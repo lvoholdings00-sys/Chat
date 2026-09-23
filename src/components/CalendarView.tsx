@@ -131,7 +131,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
               Operations Calendar
             </h1>
             <p className="text-xs text-neutral-400 mt-0.5">
-              Coordinated field operations, briefing schedule, and system audits.
+              Team events, meetings, and schedules.
             </p>
           </div>
         </div>
@@ -267,7 +267,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
 
         {selectedDayEvents.length === 0 ? (
           <p className="text-xs text-neutral-500 py-4 text-center">
-            No operations or briefings scheduled for this date.
+            No events scheduled for this date.
           </p>
         ) : (
           <div className="space-y-2">
@@ -337,7 +337,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                   type="text"
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
-                  placeholder="e.g. Tactical Sync Briefing"
+                  placeholder="e.g. Team Sync"
                   required
                   className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-indigo-500"
                 />
