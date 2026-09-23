@@ -90,7 +90,7 @@ export const AdminTelemetryDashboard: React.FC = () => {
                 {entry.name}:
               </span>
               <span className="font-bold text-white">
-                {entry.value} {entry.name === 'Message Volume' ? 'transmissions' : 'personnel'}
+                {entry.value} {entry.name === 'Message Volume' ? 'messages' : 'people'}
               </span>
             </div>
           ))}
@@ -115,7 +115,7 @@ export const AdminTelemetryDashboard: React.FC = () => {
             </span>
           </div>
           <p className="text-[11px] text-neutral-400 mt-1">
-            Recharts-driven trend analysis of message volume and active personnel presence across frequencies.
+            Trend analysis of message volume and active members across channels.
           </p>
         </div>
 
@@ -259,7 +259,7 @@ export const AdminTelemetryDashboard: React.FC = () => {
               <div className="flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-indigo-500" />
                 <h3 className="text-xs font-semibold text-neutral-200">
-                  Daily Transmission Volume (Messages / Day)
+                  Daily Message Volume
                 </h3>
               </div>
               <span className="text-[10.5px] font-mono text-neutral-500">
@@ -312,7 +312,7 @@ export const AdminTelemetryDashboard: React.FC = () => {
               <div className="flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
                 <h3 className="text-xs font-semibold text-neutral-200">
-                  Active Personnel Trends (Unique Daily Operators)
+                  Active Members (Daily)
                 </h3>
               </div>
               <span className="text-[10.5px] font-mono text-neutral-500">
@@ -346,7 +346,7 @@ export const AdminTelemetryDashboard: React.FC = () => {
                   <Area
                     type="monotone"
                     dataKey="activeUsers"
-                    name="Active Personnel"
+                    name="Active Members"
                     stroke="#10b981"
                     strokeWidth={2}
                     fillOpacity={1}
