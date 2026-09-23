@@ -157,7 +157,7 @@ export const ChannelModal: React.FC<ChannelModalProps> = ({
               type="text"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Tactical operations briefing and mission intelligence."
+              placeholder="What's this channel about?"
               className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-indigo-500"
             />
           </div>
