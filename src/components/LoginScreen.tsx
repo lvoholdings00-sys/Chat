@@ -1,13 +1,11 @@
 import React, { useState } from 'react';
-import { ArrowLeft, ShieldCheck, KeyRound, UserCheck } from 'lucide-react';
-import type { User } from '../types';
+import { ArrowLeft, KeyRound } from 'lucide-react';
 
 interface LoginScreenProps {
   onLogin: (username: string, password: string) => Promise<void>;
-  preloadedUsers: User[];
 }
 
-export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, preloadedUsers }) => {
+export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -29,14 +27,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, preloadedUser
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleQuickLogin = (uname: string) => {
-    setUsername(uname);
-    setPassword('Password123!');
-    onLogin(uname, 'Password123!').catch((err) => {
-      setError(err.message || 'Login failed');
-    });
   };
 
   return (
@@ -116,38 +106,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, preloadedUser
               {loading ? 'Authenticating Security Line…' : 'Sign in to Secure Network'}
             </button>
           </form>
-
-          {/* Quick personnel switch for instant testing */}
-          <div className="mt-8 pt-6 border-t border-white/10">
-            <p className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider text-center mb-3">
-              One-Click Personnel Dispatch (Instant Test)
-            </p>
-            <div className="grid grid-cols-2 gap-2">
-              {preloadedUsers.slice(0, 4).map((u) => (
-                <button
-                  key={u.id}
-                  type="button"
-                  onClick={() => handleQuickLogin(u.username)}
-                  className="flex items-center gap-2 p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/15 transition-all text-left group cursor-pointer"
-                >
-                  <span className="w-7 h-7 rounded-lg bg-neutral-800 flex items-center justify-center text-sm shrink-0">
-                    {u.avatar}
-                  </span>
-                  <div className="min-w-0">
-                    <p className="text-xs font-medium text-neutral-200 truncate group-hover:text-white">
-                      {u.displayName}
-                    </p>
-                    <p className="text-[10px] text-neutral-500 truncate">
-                      {u.isLeader ? 'Leader' : 'Member'} • @{u.username}
-                    </p>
-                  </div>
-                </button>
-              ))}
-            </div>
-            <p className="text-[10px] text-neutral-500 text-center mt-3">
-              Default demo passkey: <code className="text-neutral-400 bg-white/5 px-1 py-0.5 rounded">Password123!</code>
-            </p>
-          </div>
         </div>
       </div>
     </div>
