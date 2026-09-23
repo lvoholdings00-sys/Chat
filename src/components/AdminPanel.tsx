@@ -182,7 +182,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             </span>
           </div>
           <p className="text-xs text-neutral-400 mt-1">
-            Personnel access governance, operational frequency configuration, and encrypted audit trails.
+            Manage member access, channels, and view activity logs.
           </p>
         </div>
 
@@ -278,7 +278,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             <div className="flex items-center gap-2">
               <Users className="w-4 h-4 text-indigo-400" />
               <h2 className="text-xs font-bold uppercase tracking-wider text-white font-mono">
-                Active Personnel Roster ({users.length})
+                Members ({users.length})
               </h2>
             </div>
           </div>
@@ -379,7 +379,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   <div className="min-w-0">
                     <p className="text-xs font-semibold text-white">#{c.name}</p>
                     <p className="text-[11px] text-neutral-400 truncate">
-                      {c.description || `${c.memberIds.length} personnel enrolled`} •{' '}
+                      {c.description || `${c.memberIds.length} members`} •{' '}
                       <span className="capitalize">{c.type}</span>
                     </p>
                   </div>
@@ -390,7 +390,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     type="button"
                     onClick={() => onDeleteChannel(c.id)}
                     className="p-1.5 text-neutral-500 hover:text-rose-400 hover:bg-white/5 rounded-lg transition-colors"
-                    title="Decommission channel"
+                    title="Delete channel"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -409,12 +409,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             </h2>
           </div>
           <p className="text-[11px] text-neutral-400 mb-4">
-            Direct messages are maintained in encrypted plaintext and are visible to Gatekeepers for compliance. Click any thread to review full transmission history.
+            Direct messages are visible to Gatekeepers for moderation purposes. Click any thread to review its full history.
           </p>
 
           {threads.length === 0 ? (
             <p className="text-xs text-neutral-500 py-4 text-center">
-              No private direct transmissions logged between personnel.
+              No direct messages between these two people yet.
             </p>
           ) : (
             <div className="divide-y divide-white/5 border border-white/10 rounded-xl overflow-hidden bg-white/[0.01]">
@@ -445,7 +445,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         {t.userA.displayName} and {t.userB.displayName}
                       </p>
                       <p className="text-[11px] text-neutral-400 truncate mt-0.5">
-                        {t.lastText || 'Attachment transmission'}
+                        {t.lastText || 'Attachment'}
                       </p>
                     </div>
                   </div>
